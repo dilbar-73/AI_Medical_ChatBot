@@ -1,0 +1,59 @@
+{% extends 'clinic/base.html' %}
+
+{% block title %}Home - AI Doctor Clinic{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <h1 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 2.5rem;">Welcome to AI Doctor Clinic</h1>
+        <p style="color: var(--text-secondary); font-size: 1.2rem; max-width: 600px; margin: 0 auto;">
+            Your intelligent healthcare companion providing AI-powered medical consultations and personalized care.
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+        <div class="glass-card" style="text-align: center;">
+            <div style="width: 80px; height: 80px; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.5rem;">👤</div>
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Patient Registration</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Register new patients and create comprehensive medical profiles for personalized care.</p>
+            <a href="{% url 'registration' %}" class="btn btn-primary">Register Patient</a>
+        </div>
+
+        <div class="glass-card" style="text-align: center;">
+            <div style="width: 80px; height: 80px; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.5rem;">🏥</div>
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem;">AI Consultancy</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Get instant medical diagnosis through voice, chat, or image analysis with our AI system.</p>
+            <a href="{% url 'consultancy' %}" class="btn btn-primary">Start Consultation</a>
+        </div>
+
+        <div class="glass-card" style="text-align: center;">
+            <div style="width: 80px; height: 80px; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.5rem;">🗺️</div>
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Find Locations</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Locate nearby medical shops and pharmacies within your area for quick access to medications.</p>
+            <a href="{% url 'location' %}" class="btn btn-primary">Find Locations</a>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <h2 style="color: var(--text-primary); margin-bottom: 1.5rem;">Our Services</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+            <div>
+                <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">🤖 AI-Powered Diagnosis</h3>
+                <p style="color: var(--text-secondary);">Advanced artificial intelligence analyzes symptoms and provides accurate medical recommendations.</p>
+            </div>
+            <div>
+                <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">📋 Medical History Tracking</h3>
+                <p style="color: var(--text-secondary);">Comprehensive patient records with consultation history and treatment plans.</p>
+            </div>
+            <div>
+                <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">💊 Prescription Management</h3>
+                <p style="color: var(--text-secondary);">Digital prescriptions with medication details and dosage information.</p>
+            </div>
+            <div>
+                <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">🔒 Secure & Private</h3>
+                <p style="color: var(--text-secondary);">Your medical data is encrypted and stored securely with complete privacy protection.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+
+<h2>AI Doctor System</h2>
+
+<form method="POST" enctype="multipart/form-data">
+{% csrf_token %}
+
+<label>Name:</label>
+{{ form.name }}
+
+<br><br>
+
+<label>Upload Medical Image:</label>
+{{ form.image }}
+
+<br><br>
+
+<label>Ask Question:</label>
+{{ form.question }}
+
+<br><br>
+
+<button type="submit">Analyze</button>
+</form>

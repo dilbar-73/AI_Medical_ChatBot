@@ -1,0 +1,123 @@
+{% extends 'clinic/base.html' %}
+
+{% block title %}Dashboard - AI Doctor Clinic{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-primary);">
+        <div style="width: 48px; height: 48px; background: var(--gradient-primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">📊</div>
+        <div>
+            <h2 style="color: var(--text-primary); margin: 0;">System Dashboard</h2>
+            <p style="color: var(--text-tertiary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Overview of clinic statistics and activity</p>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--accent-primary);">👥</div>
+            <h3 style="color: var(--text-primary); font-size: 2rem; margin-bottom: 0.5rem;">{{ stats.total_patients }}</h3>
+            <p style="color: var(--text-secondary);">Total Patients</p>
+        </div>
+        
+        <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--success);">🔍</div>
+            <h3 style="color: var(--text-primary); font-size: 2rem; margin-bottom: 0.5rem;">{{ stats.total_consultations }}</h3>
+            <p style="color: var(--text-secondary);">Total Consultations</p>
+        </div>
+        
+        <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--accent-secondary);">📅</div>
+            <h3 style="color: var(--text-primary); font-size: 2rem; margin-bottom: 0.5rem;">{{ stats.consultations_today }}</h3>
+            <p style="color: var(--text-secondary);">Today's Consultations</p>
+        </div>
+        
+        <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--warning);">📈</div>
+            <h3 style="color: var(--text-primary); font-size: 2rem; margin-bottom: 0.5rem;">{{ stats.consultations_week }}</h3>
+            <p style="color: var(--text-secondary);">This Week</p>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card">
+    <h3 style="color: var(--text-primary); margin-bottom: 1.5rem;">Recent Consultations</h3>
+    
+    {% if recent_consultations %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--bg-tertiary);">
+                    <th style="padding: 1rem; text-align: left; color: var(--text-primary); border-bottom: 1px solid var(--border-primary);">Patient</th>
+                    <th style="padding: 1rem; text-align: left; color: var(--text-primary); border-bottom: 1px solid var(--border-primary);">Date</th>
+                    <th style="padding: 1rem; text-align: left; color: var(--text-primary); border-bottom: 1px solid var(--border-primary);">Symptoms</th>
+                    <th style="padding: 1rem; text-align: left; color: var(--text-primary); border-bottom: 1px solid var(--border-primary);">Diagnosis</th>
+                    <th style="padding: 1rem; text-align: left; color: var(--text-primary); border-bottom: 1px solid var(--border-primary);">Media</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for consultation in recent_consultations %}
+                <tr style="border-bottom: 1px solid var(--border-primary);">
+                    <td style="padding: 1rem; color: var(--text-secondary);">
+                        <div style="font-weight: 600; color: var(--text-primary);">{{ consultation.patient.name }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-tertiary);">ID: {{ consultation.patient.referral_number|slice:":8" }}...</div>
+                    </td>
+                    <td style="padding: 1rem; color: var(--text-secondary);">{{ consultation.created_at|date:"M d, Y H:i" }}</td>
+                    <td style="padding: 1rem; color: var(--text-secondary);">
+                        {% if consultation.symptoms %}
+                            {{ consultation.symptoms|truncatechars:80 }}
+                        {% else %}
+                            <span style="color: var(--text-tertiary);">No text symptoms</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; color: var(--text-secondary);">
+                        {% if consultation.diagnosis %}
+                            {{ consultation.diagnosis|truncatechars:80 }}
+                        {% else %}
+                            <span style="color: var(--text-tertiary);">No diagnosis</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; color: var(--text-secondary);">
+                        <div style="display: flex; gap: 0.5rem;">
+                            {% if consultation.medical_image %}
+                                <span style="color: var(--accent-secondary);" title="Image">🖼️</span>
+                            {% endif %}
+                            {% if consultation.voice_note %}
+                                <span style="color: var(--accent-primary);" title="Voice Input">🎤</span>
+                            {% endif %}
+                            {% if not consultation.medical_image and not consultation.voice_note %}
+                                <span style="color: var(--text-tertiary);">None</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">📋</div>
+        <p>No consultations yet. Start your first consultation to see data here.</p>
+        <a href="{% url 'consultancy' %}" class="btn btn-primary" style="margin-top: 1rem;">Start Consultation</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="glass-card">
+    <h3 style="color: var(--text-primary); margin-bottom: 1.5rem;">Quick Actions</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <a href="{% url 'registration' %}" class="btn btn-primary" style="justify-content: center;">
+            <span>➕</span> Register Patient
+        </a>
+        <a href="{% url 'consultancy' %}" class="btn btn-primary" style="justify-content: center;">
+            <span>🔍</span> New Consultation
+        </a>
+        <a href="{% url 'database' %}" class="btn btn-secondary" style="justify-content: center;">
+            <span>🗄️</span> View Database
+        </a>
+        <a href="{% url 'home' %}" class="btn btn-secondary" style="justify-content: center;">
+            <span>🏠</span> Back to Home
+        </a>
+    </div>
+</div>
+{% endblock %}

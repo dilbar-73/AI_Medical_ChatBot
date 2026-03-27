@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Doctor - Location Suggestions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1b3a;
+            --bg-tertiary: #252744;
+            --text-primary: #ffffff;
+            --text-secondary: #b8bcc8;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #374151;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: rgba(26, 27, 58, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+        
+        .nav-links a:hover {
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .nav-links a.active {
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid var(--accent-primary);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header-section h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .referral-banner {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--accent-primary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .referral-banner h3 {
+            color: var(--accent-primary);
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+        
+        .referral-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .map-section {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #map {
+            height: 500px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .shops-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .shop-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 25px;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .shop-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
+            border-color: var(--accent-primary);
+        }
+        
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .shop-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .shop-distance {
+            background: var(--accent-primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .shop-info {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .shop-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .feature-tag {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent-primary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid var(--accent-primary);
+        }
+        
+        .filter-section {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .filter-btn {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+        
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .shops-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-controls {
+                flex-direction: column;
+            }
+            
+            .filter-input {
+                width: 100%;
+            }
+            
+            #map {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🏥 AI Doctor</div>
+        <div class="nav-links">
+            <a href="{% url 'registration' %}">Registration</a>
+            <a href="{% url 'consultancy' %}">Consultancy</a>
+            <a href="{% url 'database' %}">Database</a>
+            <a href="{% url 'location' %}" class="active">Location</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="header-section">
+            <h1>Medical Shop Locations</h1>
+            <p style="color: var(--text-secondary);">Find nearby pharmacies and medical stores within 3km radius</p>
+            
+            <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <a href="{% url 'consultancy' %}" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; text-decoration: none; border: 1px solid var(--border); transition: all 0.3s;">
+                    🏥 New Consultation
+                </a>
+                <a href="{% url 'database' %}" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; text-decoration: none; border: 1px solid var(--border); transition: all 0.3s;">
+                    📊 View Database
+                </a>
+                <a href="{% url 'registration' %}" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; text-decoration: none; border: 1px solid var(--border); transition: all 0.3s;">
+                    📝 Update Info
+                </a>
+            </div>
+        </div>
+        
+        <div class="referral-banner">
+            <h3>🔖 Your Referral Number</h3>
+            <div class="referral-number">{{ referral_number }}</div>
+        </div>
+        
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-number">12</div>
+                <div class="stat-label">Total Shops</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">3km</div>
+                <div class="stat-label">Search Radius</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Available</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Emergency</div>
+            </div>
+        </div>
+        
+        <div class="filter-section">
+            <div class="section-title">
+                <span>🔍</span>
+                <span>Search Filters</span>
+            </div>
+            <div class="filter-controls">
+                <input type="text" class="filter-input" placeholder="Search by name or area..." id="searchInput">
+                <select class="filter-input" id="typeFilter">
+                    <option value="">All Types</option>
+                    <option value="pharmacy">Pharmacy</option>
+                    <option value="hospital">Hospital</option>
+                    <option value="clinic">Clinic</option>
+                </select>
+                <select class="filter-input" id="ratingFilter">
+                    <option value="">All Ratings</option>
+                    <option value="4">4+ Stars</option>
+                    <option value="3">3+ Stars</option>
+                </select>
+                <button class="filter-btn" onclick="filterShops()">Apply Filters</button>
+            </div>
+        </div>
+        
+        <div class="map-section">
+            <div class="section-title">
+                <span>🗺️</span>
+                <span>Interactive Map</span>
+            </div>
+            <div id="map"></div>
+        </div>
+        
+        <div class="shops-grid" id="shopsGrid">
+            <div class="shop-card" onclick="focusOnMap(28.6139, 77.2090)">
+                <div class="shop-header">
+                    <div class="shop-name">City Pharmacy</div>
+                    <div class="shop-distance">0.8 km</div>
+                </div>
+                <div class="shop-info">
+                    <p>📍 123 Main Street, Delhi</p>
+                    <p>📞 +91 98765 43210</p>
+                    <p>⏰ Open 24/7</p>
+                </div>
+                <div class="shop-features">
+                    <span class="feature-tag">24/7</span>
+                    <span class="feature-tag">Delivery</span>
+                    <span class="feature-tag">Emergency</span>
+                </div>
+            </div>
+            
+            <div class="shop-card" onclick="focusOnMap(28.6150, 77.2100)">
+                <div class="shop-header">
+                    <div class="shop-name">MediPlus</div>
+                    <div class="shop-distance">1.2 km</div>
+                </div>
+                <div class="shop-info">
+                    <p>📍 45 Park Avenue, Delhi</p>
+                    <p>📞 +91 98765 43211</p>
+                    <p>⏰ 8AM - 10PM</p>
+                </div>
+                <div class="shop-features">
+                    <span class="feature-tag">Online Order</span>
+                    <span class="feature-tag">Insurance</span>
+                </div>
+            </div>
+            
+            <div class="shop-card" onclick="focusOnMap(28.6120, 77.2080)">
+                <div class="shop-header">
+                    <div class="shop-name">HealthCare Pharmacy</div>
+                    <div class="shop-distance">1.5 km</div>
+                </div>
+                <div class="shop-info">
+                    <p>📍 78 Medical Center, Delhi</p>
+                    <p>📞 +91 98765 43212</p>
+                    <p>⏰ 24/7</p>
+                </div>
+                <div class="shop-features">
+                    <span class="feature-tag">24/7</span>
+                    <span class="feature-tag">Home Delivery</span>
+                    <span class="feature-tag">Special Orders</span>
+                </div>
+            </div>
+            
+            <div class="shop-card" onclick="focusOnMap(28.6145, 77.2110)">
+                <div class="shop-header">
+                    <div class="shop-name">Wellness Store</div>
+                    <div class="shop-distance">2.1 km</div>
+                </div>
+                <div class="shop-info">
+                    <p>📍 200 Health Plaza, Delhi</p>
+                    <p>📞 +91 98765 43213</p>
+                    <p>⏰ 9AM - 9PM</p>
+                </div>
+                <div class="shop-features">
+                    <span class="feature-tag">Organic</span>
+                    <span class="feature-tag">Wellness</span>
+                </div>
+            </div>
+            
+            <div class="shop-card" onclick="focusOnMap(28.6125, 77.2070)">
+                <div class="shop-header">
+                    <div class="shop-name">QuickMeds</div>
+                    <div class="shop-distance">2.3 km</div>
+                </div>
+                <div class="shop-info">
+                    <p>📍 15 Quick Lane, Delhi</p>
+                    <p>📞 +91 98765 43214</p>
+                    <p>⏰ 7AM - 11PM</p>
+                </div>
+                <div class="shop-features">
+                    <span class="feature-tag">Fast Delivery</span>
+                    <span class="feature-tag">Emergency</span>
+                </div>
+            </div>
+            
+            <div class="shop-card" onclick="focusOnMap(28.6160, 77.2120)">
+                <div class="shop-header">
+                    <div class="shop-name">Apollo Pharmacy</div>
+                    <div class="shop-distance">2.8 km</div>
+                </div>
+                <div class="shop-info">
+                    <p>📍 500 Apollo Complex, Delhi</p>
+                    <p>📞 +91 98765 43215</p>
+                    <p>⏰ 24/7</p>
+                </div>
+                <div class="shop-features">
+                    <span class="feature-tag">Chain Store</span>
+                    <span class="feature-tag">24/7</span>
+                    <span class="feature-tag">Insurance</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let map = null;
+        let userLocation = null;
+        let markers = [];
+        
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([28.6139, 77.2090], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Get user location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    userLocation = [position.coords.latitude, position.coords.longitude];
+                    map.setView(userLocation, 14);
+                    
+                    // Add user marker
+                    L.marker(userLocation).addTo(map)
+                        .bindPopup('Your Location')
+                        .openPopup();
+                    
+                    // Add medical shops
+                    addMedicalShops();
+                });
+            } else {
+                addMedicalShops();
+            }
+        }
+        
+        function addMedicalShops() {
+            const medicalShops = [
+                {name: "City Pharmacy", lat: 28.6139, lon: 77.2090, distance: 0.8, type: "pharmacy", rating: 4.5},
+                {name: "MediPlus", lat: 28.6150, lon: 77.2100, distance: 1.2, type: "pharmacy", rating: 4.2},
+                {name: "HealthCare Pharmacy", lat: 28.6120, lon: 77.2080, distance: 1.5, type: "pharmacy", rating: 4.7},
+                {name: "Wellness Store", lat: 28.6145, lon: 77.2110, distance: 2.1, type: "pharmacy", rating: 4.0},
+                {name: "QuickMeds", lat: 28.6125, lon: 77.2070, distance: 2.3, type: "pharmacy", rating: 4.3},
+                {name: "Apollo Pharmacy", lat: 28.6160, lon: 77.2120, distance: 2.8, type: "pharmacy", rating: 4.6}
+            ];
+            
+            medicalShops.forEach(shop => {
+                const marker = L.marker([shop.lat, shop.lon]).addTo(map);
+                const popupContent = `
+                    <div style="padding: 10px;">
+                        <h4 style="margin: 0 0 10px 0; color: #6366f1;">${shop.name}</h4>
+                        <p style="margin: 5px 0;">📍 Distance: ${shop.distance}km</p>
+                        <p style="margin: 5px 0;">⭐ Rating: ${shop.rating}/5</p>
+                        <p style="margin: 5px 0;">🏪 Type: ${shop.type}</p>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+                markers.push(marker);
+            });
+        }
+        
+        function focusOnMap(lat, lon) {
+            map.setView([lat, lon], 16);
+            // Find and open the corresponding marker popup
+            markers.forEach(marker => {
+                const pos = marker.getLatLng();
+                if (Math.abs(pos.lat - lat) < 0.0001 && Math.abs(pos.lng - lon) < 0.0001) {
+                    marker.openPopup();
+                }
+            });
+        }
+        
+        function filterShops() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const ratingFilter = document.getElementById('ratingFilter').value;
+            
+            const shopCards = document.querySelectorAll('.shop-card');
+            shopCards.forEach(card => {
+                const name = card.querySelector('.shop-name').textContent.toLowerCase();
+                const features = Array.from(card.querySelectorAll('.feature-tag')).map(tag => tag.textContent.toLowerCase());
+                
+                let show = true;
+                
+                // Search filter
+                if (searchTerm && !name.includes(searchTerm) && !features.some(f => f.includes(searchTerm))) {
+                    show = false;
+                }
+                
+                // Type filter (simplified for demo)
+                if (typeFilter && !name.toLowerCase().includes(typeFilter)) {
+                    show = false;
+                }
+                
+                card.style.display = show ? 'block' : 'none';
+            });
+        }
+        
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+        });
+    </script>
+</body>
+</html>

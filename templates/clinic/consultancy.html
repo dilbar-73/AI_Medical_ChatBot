@@ -1,0 +1,472 @@
+{% extends 'clinic/base.html' %}
+
+{% block title %}AI Consultancy - AI Doctor Clinic{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-primary);">
+        <div style="width: 48px; height: 48px; background: var(--gradient-primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">🏥</div>
+        <div>
+            <h2 style="color: var(--text-primary); margin: 0;">AI Medical Consultancy</h2>
+            <p style="color: var(--text-tertiary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Get instant medical diagnosis and treatment recommendations</p>
+        </div>
+    </div>
+
+    <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--accent-primary); border-radius: 12px; padding: 15px; margin-bottom: 20px; display: inline-block;">
+        <h3 style="color: var(--accent-primary); margin-bottom: 5px;">🔖 Referral Number</h3>
+        <p style="font-size: 18px; font-weight: 600; color: var(--text-primary);">{{ referral_number }}</p>
+    </div>
+
+    <p style="color: var(--text-secondary); margin-bottom: 20px;">Welcome, <strong>{{ patient.name }}</strong>! Please describe your symptoms for AI-powered diagnosis.</p>
+</div>
+
+<div class="glass-card">
+    <h3 style="color: var(--text-primary); margin-bottom: 1.5rem;">Describe Your Symptoms</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="glass-card" style="text-align: center; padding: 1.5rem; cursor: pointer; border: 2px solid transparent; transition: all 0.3s;" onclick="selectMethod('text')" id="text-method">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💬</div>
+            <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Text Input</h4>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Type your symptoms in detail</p>
+        </div>
+        
+        <div class="glass-card" style="text-align: center; padding: 1.5rem; cursor: pointer; border: 2px solid transparent; transition: all 0.3s;" onclick="selectMethod('voice')" id="voice-method">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎤</div>
+            <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Voice Input</h4>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Speak your symptoms naturally</p>
+        </div>
+        
+        <div class="glass-card" style="text-align: center; padding: 1.5rem; cursor: pointer; border: 2px solid transparent; transition: all 0.3s;" onclick="selectMethod('image')" id="image-method">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📷</div>
+            <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Image Upload</h4>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Upload medical images or reports</p>
+        </div>
+    </div>
+
+    <!-- Text Input Section -->
+    <div id="text-section" style="display: none;">
+        <div class="form-group">
+            <label for="symptoms-text" class="form-label">Describe Your Symptoms</label>
+            <textarea id="symptoms-text" class="form-textarea" rows="4" placeholder="Please describe your symptoms in detail, including when they started, severity, and any other relevant information..."></textarea>
+        </div>
+        <button onclick="analyzeSymptoms('text')" class="btn btn-primary">🔍 Analyze Symptoms</button>
+    </div>
+
+    <!-- Voice Input Section -->
+    <div id="voice-section" style="display: none;">
+        <div class="form-group">
+            <label class="form-label">Voice Recording</label>
+            <div style="text-align: center; padding: 2rem; border: 2px dashed var(--border-primary); border-radius: 0.5rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🎤</div>
+                <button onclick="toggleRecording()" id="record-btn" class="btn btn-primary">🎤 Start Recording</button>
+                <p style="color: var(--text-secondary); margin-top: 1rem;">Click to start recording your symptoms</p>
+                <div id="recording-status" style="display: none; margin-top: 1rem;">
+                    <p style="color: var(--warning);">🔴 Recording... Speak clearly</p>
+                </div>
+            </div>
+        </div>
+        <button onclick="analyzeSymptoms('voice')" class="btn btn-primary" style="display: none;" id="analyze-voice-btn">🔍 Analyze Voice Recording</button>
+    </div>
+
+    <!-- Image Upload Section -->
+    <div id="image-section" style="display: none;">
+        <div class="form-group">
+            <label class="form-label">Upload Medical Image</label>
+            <div style="border: 2px dashed var(--border-primary); border-radius: 0.5rem; padding: 2rem; text-align: center; cursor: pointer;" onclick="document.getElementById('image-upload').click()">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📷</div>
+                <p style="color: var(--text-secondary);">Click to upload or drag and drop</p>
+                <p style="color: var(--text-tertiary); font-size: 0.9rem;">Supported: JPG, PNG, PDF (Max 5MB)</p>
+                <input type="file" id="image-upload" accept="image/*,.pdf" style="display: none;" onchange="handleImageUpload(event)">
+            </div>
+            <div id="image-preview" style="display: none; margin-top: 1rem;">
+                <img id="preview-img" style="max-width: 100%; max-height: 200px; border-radius: 0.5rem;">
+                <button onclick="removeImage()" class="btn btn-secondary" style="margin-top: 0.5rem;">Remove Image</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="image-description" class="form-label">Additional Information</label>
+            <textarea id="image-description" class="form-textarea" rows="3" placeholder="Describe what the image shows and any related symptoms..."></textarea>
+        </div>
+        <button onclick="analyzeSymptoms('image')" class="btn btn-primary" style="display: none;" id="analyze-image-btn">🔍 Analyze Image</button>
+    </div>
+</div>
+
+<!-- AI Analysis Results -->
+<div id="results-section" class="glass-card" style="display: none;">
+    <h3 style="color: var(--text-primary); margin-bottom: 1.5rem;">🤖 AI Analysis Results</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+        <div class="glass-card">
+            <h4 style="color: var(--accent-primary); margin-bottom: 1rem;">🔍 Diagnosis</h4>
+            <div id="diagnosis-result" style="color: var(--text-secondary); line-height: 1.6;">
+                <!-- AI diagnosis will appear here -->
+            </div>
+        </div>
+        
+        <div class="glass-card">
+            <h4 style="color: var(--success); margin-bottom: 1rem;">💊 Recommended Medicines</h4>
+            <div id="medicines-result" style="color: var(--text-secondary); line-height: 1.6;">
+                <!-- Medicine suggestions will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescription Section -->
+    <div class="glass-card">
+        <h4 style="color: var(--text-primary); margin-bottom: 1.5rem;">📋 Generated Prescription</h4>
+        
+        <div id="prescription-content" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--border-primary);">
+            <!-- Prescription will be generated here -->
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button onclick="downloadPrescription()" class="btn btn-primary">
+                📥 Download Prescription (PDF)
+            </button>
+            <button onclick="saveConsultation()" class="btn btn-secondary">
+                💾 Save to Database
+            </button>
+            <button onclick="resetConsultation()" class="btn btn-secondary">
+                🔄 New Consultation
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .method-selected {
+        border-color: var(--accent-primary) !important;
+        background: rgba(99, 102, 241, 0.1) !important;
+    }
+    
+    .medicine-item {
+        background: var(--bg-secondary);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--success);
+    }
+    
+    .medicine-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .medicine-dosage {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .medicine-instructions {
+        color: var(--text-tertiary);
+        font-size: 0.85rem;
+    }
+</style>
+
+<script>
+    let selectedMethod = null;
+    let isRecording = false;
+    let consultationData = {
+        symptoms: '',
+        diagnosis: '',
+        medicines: [],
+        method: ''
+    };
+
+    function selectMethod(method) {
+        // Remove previous selection
+        document.querySelectorAll('[id$="-method"]').forEach(el => {
+            el.classList.remove('method-selected');
+        });
+        
+        // Hide all sections
+        document.getElementById('text-section').style.display = 'none';
+        document.getElementById('voice-section').style.display = 'none';
+        document.getElementById('image-section').style.display = 'none';
+        
+        // Show selected section
+        document.getElementById(method + '-section').style.display = 'block';
+        document.getElementById(method + '-method').classList.add('method-selected');
+        
+        selectedMethod = method;
+        consultationData.method = method;
+    }
+
+    function analyzeSymptoms(method) {
+        let symptoms = '';
+        
+        if (method === 'text') {
+            symptoms = document.getElementById('symptoms-text').value;
+        } else if (method === 'voice') {
+            symptoms = 'Voice recording analyzed: ' + (document.getElementById('voice-transcript')?.value || 'Patient described symptoms verbally');
+        } else if (method === 'image') {
+            const description = document.getElementById('image-description').value;
+            symptoms = 'Image analysis: ' + (description || 'Medical image uploaded for analysis');
+        }
+        
+        if (!symptoms.trim()) {
+            alert('Please provide symptom information before analysis.');
+            return;
+        }
+        
+        consultationData.symptoms = symptoms;
+        
+        // Simulate AI analysis
+        performAIAnalysis(symptoms);
+    }
+
+    function performAIAnalysis(symptoms) {
+        // Simulate AI processing
+        setTimeout(() => {
+            const diagnoses = [
+                'Common cold with seasonal allergies',
+                'Muscle strain due to overexertion',
+                'Gastrointestinal discomfort',
+                'Tension headache',
+                'Mild respiratory infection'
+            ];
+            
+            const medicineSets = [
+                [
+                    {name: 'Paracetamol', dosage: '500mg', instructions: 'Take 1 tablet twice daily after meals', duration: '3-5 days'},
+                    {name: 'Cetirizine', dosage: '10mg', instructions: 'Take 1 tablet at bedtime', duration: '7 days'},
+                    {name: 'Vitamin C', dosage: '500mg', instructions: 'Take 1 tablet daily', duration: '14 days'}
+                ],
+                [
+                    {name: 'Ibuprofen', dosage: '400mg', instructions: 'Take 1 tablet twice daily with food', duration: '5-7 days'},
+                    {name: 'Muscle relaxant gel', dosage: 'Apply locally', instructions: 'Apply to affected area 3 times daily', duration: 'As needed'},
+                    {name: 'Hot water bag', dosage: 'Apply', instructions: 'Apply to affected area for 15-20 minutes', duration: 'As needed'}
+                ],
+                [
+                    {name: 'Antacid liquid', dosage: '2 tsp', instructions: 'Take after meals and at bedtime', duration: '7 days'},
+                    {name: 'Probiotics', dosage: '1 capsule', instructions: 'Take daily with water', duration: '14 days'},
+                    {name: 'ORS solution', dosage: '1 packet', instructions: 'Mix in 1L water, sip throughout day', duration: 'As needed'}
+                ]
+            ];
+            
+            const randomDiagnosis = diagnoses[Math.floor(Math.random() * diagnoses.length)];
+            const randomMedicines = medicineSets[Math.floor(Math.random() * medicineSets.length)];
+            
+            // Update results
+            consultationData.diagnosis = randomDiagnosis;
+            consultationData.medicines = randomMedicines;
+            
+            displayResults(randomDiagnosis, randomMedicines);
+            generatePrescription(randomDiagnosis, randomMedicines);
+            
+            // Show results section
+            document.getElementById('results-section').style.display = 'block';
+            document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+        }, 1500);
+    }
+
+    function displayResults(diagnosis, medicines) {
+        // Display diagnosis
+        document.getElementById('diagnosis-result').innerHTML = `
+            <p><strong>Primary Diagnosis:</strong> ${diagnosis}</p>
+            <p style="margin-top: 1rem;"><strong>Severity:</strong> <span style="color: var(--warning);">Mild to Moderate</span></p>
+            <p style="margin-top: 0.5rem;"><strong>Recommended Action:</strong> Follow prescribed treatment and monitor symptoms. Consult physician if symptoms persist beyond 3 days.</p>
+        `;
+        
+        // Display medicines
+        const medicinesHTML = medicines.map(med => `
+            <div class="medicine-item">
+                <div class="medicine-name">${med.name}</div>
+                <div class="medicine-dosage"><strong>Dosage:</strong> ${med.dosage}</div>
+                <div class="medicine-instructions"><strong>Instructions:</strong> ${med.instructions}</div>
+                <div class="medicine-instructions"><strong>Duration:</strong> ${med.duration}</div>
+            </div>
+        `).join('');
+        
+        document.getElementById('medicines-result').innerHTML = medicinesHTML;
+    }
+
+    function generatePrescription(diagnosis, medicines) {
+        const prescriptionHTML = `
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">AI DOCTOR CLINIC</h3>
+                <p style="color: var(--text-secondary);">Digital Prescription</p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                <div>
+                    <p><strong>Patient:</strong> {{ patient.name }}</p>
+                    <p><strong>Referral ID:</strong> {{ referral_number }}</p>
+                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                </div>
+                <div>
+                    <p><strong>Doctor:</strong> AI Medical System</p>
+                    <p><strong>License:</strong> AI-MED-2024-001</p>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Diagnosis</h4>
+                <p style="color: var(--text-secondary);">${diagnosis}</p>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Prescribed Medicines</h4>
+                ${medicines.map((med, index) => `
+                    <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-primary);">
+                        <p><strong>${index + 1}. ${med.name}</strong> - ${med.dosage}</p>
+                        <p style="color: var(--text-secondary); margin-left: 1rem;">${med.instructions}</p>
+                        <p style="color: var(--text-secondary); margin-left: 1rem;">Duration: ${med.duration}</p>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Instructions</h4>
+                <ul style="color: var(--text-secondary); margin-left: 1rem;">
+                    <li>Take medicines as prescribed above</li>
+                    <li>Complete the full course of medication</li>
+                    <li>Rest adequately and stay hydrated</li>
+                    <li>Follow up if symptoms persist beyond 3 days</li>
+                    <li>Seek immediate medical attention for severe symptoms</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-primary);">
+                <p style="color: var(--text-tertiary); font-size: 0.85rem;">This is a digitally generated prescription. Please consult a qualified healthcare provider for personalized medical advice.</p>
+            </div>
+        `;
+        
+        document.getElementById('prescription-content').innerHTML = prescriptionHTML;
+    }
+
+    function downloadPrescription() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add content to PDF
+        doc.setFontSize(20);
+        doc.text('AI DOCTOR CLINIC - Prescription', 105, 20, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.text(`Patient: {{ patient.name }}`, 20, 40);
+        doc.text(`Referral ID: {{ referral_number }}`, 20, 50);
+        doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 60);
+        
+        doc.text('Diagnosis:', 20, 80);
+        doc.setFontSize(10);
+        const diagnosisLines = doc.splitTextToSize(consultationData.diagnosis, 170);
+        doc.text(diagnosisLines, 20, 90);
+        
+        doc.setFontSize(12);
+        doc.text('Prescribed Medicines:', 20, 120);
+        
+        let yPosition = 130;
+        consultationData.medicines.forEach((med, index) => {
+            doc.setFontSize(10);
+            doc.text(`${index + 1}. ${med.name} - ${med.dosage}`, 25, yPosition);
+            yPosition += 7;
+            doc.text(`   ${med.instructions}`, 25, yPosition);
+            yPosition += 7;
+            doc.text(`   Duration: ${med.duration}`, 25, yPosition);
+            yPosition += 10;
+        });
+        
+        // Save the PDF
+        doc.save(`prescription_{{ patient.name }}_${new Date().toISOString().split('T')[0]}.pdf`);
+    }
+
+    function saveConsultation() {
+        fetch('/save-consultation/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(consultationData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Consultation saved successfully!');
+            } else {
+                alert('Error saving consultation: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving consultation');
+        });
+    }
+
+    function resetConsultation() {
+        if (confirm('Are you sure you want to start a new consultation?')) {
+            location.reload();
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Voice recording functions (simplified)
+    function toggleRecording() {
+        const btn = document.getElementById('record-btn');
+        const status = document.getElementById('recording-status');
+        
+        if (!isRecording) {
+            isRecording = true;
+            btn.textContent = '⏹️ Stop Recording';
+            btn.style.background = 'var(--danger)';
+            status.style.display = 'block';
+            
+            // Simulate recording for 3 seconds
+            setTimeout(() => {
+                stopRecording();
+            }, 3000);
+        } else {
+            stopRecording();
+        }
+    }
+
+    function stopRecording() {
+        isRecording = false;
+        const btn = document.getElementById('record-btn');
+        const status = document.getElementById('recording-status');
+        
+        btn.textContent = '🎤 Start Recording';
+        btn.style.background = '';
+        status.style.display = 'none';
+        
+        document.getElementById('analyze-voice-btn').style.display = 'inline-block';
+    }
+
+    // Image upload functions
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-img').src = e.target.result;
+                document.getElementById('image-preview').style.display = 'block';
+                document.getElementById('analyze-image-btn').style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function removeImage() {
+        document.getElementById('image-upload').value = '';
+        document.getElementById('image-preview').style.display = 'none';
+        document.getElementById('analyze-image-btn').style.display = 'none';
+    }
+</script>
+{% endblock %}

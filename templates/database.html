@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Doctor - Database</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1b3a;
+            --bg-tertiary: #252744;
+            --text-primary: #ffffff;
+            --text-secondary: #b8bcc8;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #374151;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: rgba(26, 27, 58, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+        
+        .nav-links a:hover {
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .nav-links a.active {
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid var(--accent-primary);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header-section h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .patient-info {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .patient-info h2 {
+            color: var(--accent-primary);
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .info-item {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .info-item label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .info-item value {
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .consultations-section {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+        }
+        
+        .consultations-section h2 {
+            color: var(--accent-primary);
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .consultation-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .consultation-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        
+        .consultation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .consultation-date {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .consultation-id {
+            background: var(--accent-primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .consultation-content h3 {
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .consultation-content p {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .medicines-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .medicine-tag {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent-primary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--accent-primary);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+        
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .consultation-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🏥 AI Doctor</div>
+        <div class="nav-links">
+            <a href="{% url 'registration' %}">Registration</a>
+            <a href="{% url 'consultancy' %}">Consultancy</a>
+            <a href="{% url 'database' %}" class="active">Database</a>
+            <a href="{% url 'location' %}">Location</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="header-section">
+            <h1>Medical Database</h1>
+            <p style="color: var(--text-secondary);">View your patient information and consultation history</p>
+            
+            <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <a href="{% url 'consultancy' %}" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; text-decoration: none; border: 1px solid var(--border); transition: all 0.3s;">
+                    🏥 New Consultation
+                </a>
+                <a href="{% url 'location' %}" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; text-decoration: none; border: 1px solid var(--border); transition: all 0.3s;">
+                    🗺️ Find Locations
+                </a>
+                <a href="{% url 'registration' %}" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; text-decoration: none; border: 1px solid var(--border); transition: all 0.3s;">
+                    📝 Update Info
+                </a>
+                <a href="/admin/" target="_blank" style="background: var(--danger); color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; border: 1px solid var(--danger); transition: all 0.3s;">
+                    🔐 Admin Panel
+                </a>
+            </div>
+        </div>
+        
+        <div class="patient-info">
+            <h2>Patient Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Referral Number</label>
+                    <value>{{ patient.referral_number }}</value>
+                </div>
+                <div class="info-item">
+                    <label>Full Name</label>
+                    <value>{{ patient.name }}</value>
+                </div>
+                <div class="info-item">
+                    <label>Email</label>
+                    <value>{{ patient.email }}</value>
+                </div>
+                <div class="info-item">
+                    <label>Phone</label>
+                    <value>{{ patient.phone }}</value>
+                </div>
+                <div class="info-item">
+                    <label>Age</label>
+                    <value>{{ patient.age }}</value>
+                </div>
+                <div class="info-item">
+                    <label>Gender</label>
+                    <value>{{ patient.get_gender_display }}</value>
+                </div>
+                <div class="info-item">
+                    <label>Specialization</label>
+                    <value>{{ patient.get_specialization_display }}</value>
+                </div>
+                <div class="info-item">
+                    <label>Registered Date</label>
+                    <value>{{ patient.created_at|date:"Y-m-d" }}</value>
+                </div>
+            </div>
+        </div>
+        
+        <div class="consultations-section">
+            <h2>Consultation History</h2>
+            {% if consultations %}
+                {% for consultation in consultations %}
+                <div class="consultation-card">
+                    <div class="consultation-header">
+                        <div class="consultation-date">
+                            {{ consultation.created_at|date:"Y-m-d H:i" }}
+                        </div>
+                        <div class="consultation-id">
+                            #{{ consultation.id }}
+                        </div>
+                    </div>
+                    <div class="consultation-content">
+                        <h3>Diagnosis</h3>
+                        <p>{{ consultation.diagnosis }}</p>
+                        
+                        {% if consultation.symptoms %}
+                        <h3>Symptoms</h3>
+                        <p>{{ consultation.symptoms }}</p>
+                        {% endif %}
+                        
+                        {% if consultation.medicines %}
+                        <h3>Prescribed Medicines</h3>
+                        <div class="medicines-list">
+                            {% for medicine in consultation.medicines %}
+                            <span class="medicine-tag">{{ medicine }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <h3>No Consultations Yet</h3>
+                    <p>Your consultation history will appear here after you visit the consultancy page.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

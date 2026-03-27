@@ -1,0 +1,215 @@
+{% extends 'clinic/base.html' %}
+
+{% block title %}Patient Portal - AI Doctor Clinic{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-primary);">
+        <div style="width: 48px; height: 48px; background: var(--gradient-primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">👤</div>
+        <div>
+            <h2 style="color: var(--text-primary); margin: 0;">Patient Portal</h2>
+            <p style="color: var(--text-tertiary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Access your medical prescriptions and consultation history</p>
+        </div>
+    </div>
+
+    {% if not patient %}
+    <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--accent-primary); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+        <h3 style="color: var(--accent-primary); margin-bottom: 1.5rem;">🔍 Find Your Prescriptions</h3>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="phone_number" class="form-label">Enter Your Phone Number</label>
+                <input type="tel" id="phone_number" name="phone_number" class="form-input" placeholder="+1 (555) 000-0000" required value="{{ phone_number }}">
+            </div>
+            
+            {% if error %}
+            <div style="background: var(--danger); color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            <button type="submit" class="btn btn-primary">🔍 Find My Prescriptions</button>
+        </form>
+    </div>
+    {% else %}
+    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="color: var(--success); margin-bottom: 1rem;">✅ Patient Information Found</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <strong>Name:</strong> {{ patient.name }}
+            </div>
+            <div>
+                <strong>Phone:</strong> {{ patient.phone }}
+            </div>
+            <div>
+                <strong>Referral ID:</strong> {{ patient.referral_number }}
+            </div>
+            <div>
+                <strong>Age:</strong> {{ patient.age }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if patient %}
+<div class="glass-card">
+    <h3 style="color: var(--text-primary); margin-bottom: 1.5rem;">📋 Your Medical Prescriptions</h3>
+    
+    {% if consultations %}
+        {% for consultation in consultations %}
+        <div class="glass-card" style="margin-bottom: 2rem; border-left: 4px solid var(--accent-primary);">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <div>
+                    <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">Consultation #{{ consultation.id }}</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        {{ consultation.created_at|date:"F d, Y H:i" }}
+                    </p>
+                </div>
+                <button onclick="downloadPrescription({{ forloop.counter0 }})" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                    📥 Download
+                </button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                <div>
+                    <h5 style="color: var(--text-primary); margin-bottom: 1rem;">🔍 Diagnosis</h5>
+                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; color: var(--text-secondary);">
+                        {{ consultation.diagnosis }}
+                    </div>
+                </div>
+                
+                <div>
+                    <h5 style="color: var(--text-primary); margin-bottom: 1rem;">💊 Prescribed Medicines</h5>
+                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                        {% if consultation.medicines %}
+                            {% for medicine in consultation.medicines %}
+                            <div style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-primary);">
+                                <strong>{{ medicine }}</strong>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p style="color: var(--text-tertiary);">No medicines prescribed</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            {% if consultation.symptoms %}
+            <div style="margin-top: 1rem;">
+                <h5 style="color: var(--text-primary); margin-bottom: 0.5rem;">📝 Symptoms</h5>
+                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; color: var(--text-secondary);">
+                    {{ consultation.symptoms }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem;">No Prescriptions Found</h3>
+            <p>You don't have any medical prescriptions in our system yet.</p>
+            <a href="{% url 'consultancy' %}" class="btn btn-primary" style="margin-top: 1rem;">
+                🏥 Start Consultation
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="glass-card">
+    <h3 style="color: var(--text-primary); margin-bottom: 1.5rem;">⚡ Quick Actions</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <a href="{% url 'consultancy' %}" class="btn btn-primary" style="justify-content: center;">
+            <span>🏥</span> New Consultation
+        </a>
+        <a href="{% url 'registration' %}" class="btn btn-secondary" style="justify-content: center;">
+            <span>📝</span> Update Info
+        </a>
+        <a href="{% url 'location' %}" class="btn btn-secondary" style="justify-content: center;">
+            <span>🗺️</span> Find Pharmacy
+        </a>
+        <button onclick="clearSession()" class="btn btn-secondary" style="justify-content: center;">
+            <span>🔄</span> New Search
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+    // Safe way to pass Django data to JavaScript
+    window.patientData = {
+        name: "{{ patient.name|escapejs }}",
+        phone: "{{ patient.phone|escapejs }}",
+        referral_number: "{{ patient.referral_number|escapejs }}"
+    };
+    
+    window.consultationsData = [
+        {% for consultation in consultations %}
+        {
+            id: {{ consultation.id }},
+            diagnosis: "{{ consultation.diagnosis|escapejs }}",
+            medicines: {{ consultation.medicines|safe }},
+            symptoms: "{{ consultation.symptoms|escapejs }}",
+            created_at: "{{ consultation.created_at|date:'Y-m-d' }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    function downloadPrescription(index) {
+        const consultation = window.consultationsData[index];
+        const patient = window.patientData;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add prescription content
+        doc.setFontSize(20);
+        doc.text('AI DOCTOR CLINIC - Prescription', 105, 20, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.text('Patient: ' + patient.name, 20, 40);
+        doc.text('Phone: ' + patient.phone, 20, 50);
+        doc.text('Referral ID: ' + patient.referral_number, 20, 60);
+        doc.text('Date: ' + new Date(consultation.created_at).toLocaleDateString(), 20, 70);
+        
+        doc.text('Diagnosis:', 20, 90);
+        doc.setFontSize(10);
+        const diagnosisLines = doc.splitTextToSize(consultation.diagnosis, 170);
+        doc.text(diagnosisLines, 20, 100);
+        
+        doc.setFontSize(12);
+        doc.text('Prescribed Medicines:', 20, 130);
+        
+        let yPosition = 140;
+        if (consultation.medicines && consultation.medicines.length > 0) {
+            consultation.medicines.forEach((medicine, index) => {
+                doc.setFontSize(10);
+                doc.text((index + 1) + '. ' + medicine, 25, yPosition);
+                yPosition += 7;
+            });
+        } else {
+            doc.setFontSize(10);
+            doc.text('No medicines prescribed', 25, yPosition);
+        }
+        
+        if (consultation.symptoms) {
+            doc.setFontSize(12);
+            doc.text('Symptoms:', 20, yPosition + 20);
+            doc.setFontSize(10);
+            const symptomsLines = doc.splitTextToSize(consultation.symptoms, 170);
+            doc.text(symptomsLines, 20, yPosition + 30);
+        }
+        
+        // Save the PDF
+        doc.save('prescription_' + patient.name.replace(/\s+/g, '_') + '_consultation' + consultation.id + '_' + consultation.created_at + '.pdf');
+    }
+    
+    function clearSession() {
+        if (confirm('Are you sure you want to search for a different patient?')) {
+            window.location.href = '{% url "patient_portal" %}';
+        }
+    }
+</script>
+{% endblock %}

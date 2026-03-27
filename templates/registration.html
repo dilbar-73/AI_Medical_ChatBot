@@ -1,0 +1,71 @@
+{% extends 'clinic/base.html' %}
+
+{% block title %}Register Patient - AI Doctor Clinic{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-primary);">
+        <div style="width: 48px; height: 48px; background: var(--gradient-primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">👤</div>
+        <div>
+            <h2 style="color: var(--text-primary); margin: 0;">Register New Patient</h2>
+            <p style="color: var(--text-tertiary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Create a patient profile for medical consultations</p>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            <div class="form-group">
+                <label for="name" class="form-label">Full Name *</label>
+                <input type="text" id="name" name="name" class="form-input" required placeholder="Enter patient's full name">
+            </div>
+            
+            <div class="form-group">
+                <label for="age" class="form-label">Age</label>
+                <input type="number" id="age" name="age" class="form-input" placeholder="Enter age" min="0" max="150">
+            </div>
+            
+            <div class="form-group">
+                <label for="gender" class="form-label">Gender</label>
+                <select id="gender" name="gender" class="form-select">
+                    <option value="Select">Select Gender</option>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                    <option value="O">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="contact_phone" class="form-label">Phone Number</label>
+                <input type="tel" id="contact_phone" name="contact_phone" class="form-input" placeholder="Enter phone number">
+            </div>
+            
+            <div class="form-group">
+                <label for="contact_email" class="form-label">Email Address</label>
+                <input type="email" id="contact_email" name="contact_email" class="form-input" placeholder="Enter email address">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="medical_history" class="form-label">Medical History</label>
+            <textarea id="medical_history" name="medical_history" class="form-textarea" placeholder="Enter any relevant medical history, pre-existing conditions, allergies, or medications..."></textarea>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <a href="{% url 'home' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Register Patient</button>
+        </div>
+    </form>
+</div>
+
+<div class="glass-card">
+    <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Registration Information</h3>
+    <div style="color: var(--text-secondary); line-height: 1.8;">
+        <p><strong>Required Fields:</strong> Only the patient's full name is required for registration.</p>
+        <p><strong>Contact Information:</strong> Phone and email are optional but recommended for follow-up communications.</p>
+        <p><strong>Medical History:</strong> Include any relevant pre-existing conditions, allergies, current medications, or past surgeries that might be important for medical consultations.</p>
+        <p><strong>Privacy:</strong> All patient information is stored securely and is used only for medical consultation purposes.</p>
+    </div>
+</div>
+{% endblock %}
