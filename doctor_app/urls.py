@@ -4,6 +4,7 @@ Defines all the URL patterns for the doctor app
 """
 
 from django.urls import path
+from django.shortcuts import render
 from . import views
 
 # URL patterns for the AI Doctor application
@@ -25,6 +26,12 @@ urlpatterns = [
     path('database/', views.database_view, name='database'),
     path('patient-portal/', views.patient_portal, name='patient_portal'),
     
+    # API endpoints
+    path('api/check-problem/', views.check_patient_problem, name='check_patient_problem'),
+    path('api/voice-consultation/', views.voice_consultation, name='voice_consultation'),
+    path('api/database-diagnosis/', views.database_diagnosis, name='database_diagnosis'),
+    
     # Utilities
     path('demo/', views.demo_login, name='demo_login'),
+    path('voice-test/', lambda request: render(request, 'voice_test.html'), name='voice_test'),
 ]
