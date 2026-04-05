@@ -5,34 +5,34 @@ Defines all the URL patterns for the doctor app
 
 from django.urls import path
 from django.shortcuts import render
-from . import views
+from doctor_app.views import *
 
 # URL patterns for the AI Doctor application
 urlpatterns = [
     # Main pages
-    path('', views.home, name='home'),
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('', home, name='home'),
+    path('dashboard/', dashboard, name='dashboard'),
     
     # Patient workflow
-    path('register/', views.registration, name='registration'),
-    path('consultancy/', views.consultancy, name='consultancy'),
-    path('save-consultation/', views.save_consultation, name='save_consultation'),
+    path('register/', registration, name='registration'),
+    path('consultancy/', consultancy, name='consultancy'),
+    path('save-consultation/', save_consultation, name='save_consultation'),
     
     # Medical features
-    path('upload/', views.upload_image, name='upload'),
-    path('location/', views.location_suggestions, name='location'),
+    path('upload/', upload_image, name='upload'),
+    path('location/', location_suggestions, name='location'),
     
     # Data and records
-    path('database/', views.database_view, name='database'),
-    path('patient-portal/', views.patient_portal, name='patient_portal'),
+    path('database/', database_view, name='database'),
+    path('patient-portal/', patient_portal, name='patient_portal'),
     
     # API endpoints
-    path('api/consult-diagnose/', views.consultancy_diagnose, name='consultancy_diagnose'),
-    path('api/check-problem/', views.check_patient_problem, name='check_patient_problem'),
-    path('api/voice-consultation/', views.voice_consultation, name='voice_consultation'),
-    path('api/database-diagnosis/', views.database_diagnosis, name='database_diagnosis'),
+    path('api/consult-diagnose/', consultancy_diagnose, name='consultancy_diagnose'),
+    path('api/check-problem/', check_patient_problem, name='check_patient_problem'),
+    path('api/voice-consultation/', voice_consultation, name='voice_consultation'),
+    path('api/database-diagnosis/', database_diagnosis, name='database_diagnosis'),
     
     # Utilities
-    path('demo/', views.demo_login, name='demo_login'),
+    path('demo/', demo_login, name='demo_login'),
     path('voice-test/', lambda request: render(request, 'voice_test.html'), name='voice_test'),
 ]
