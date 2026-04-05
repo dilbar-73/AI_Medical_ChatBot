@@ -27,6 +27,7 @@ urlpatterns = [
     path('patient-portal/', views.patient_portal, name='patient_portal'),
     
     # API endpoints
+    path('api/consult-diagnose/', views.consultancy_diagnose, name='consultancy_diagnose'),
     path('api/check-problem/', views.check_patient_problem, name='check_patient_problem'),
     path('api/voice-consultation/', views.voice_consultation, name='voice_consultation'),
     path('api/database-diagnosis/', views.database_diagnosis, name='database_diagnosis'),

@@ -23,6 +23,7 @@ import wave
 import numpy as np
 from django.conf import settings
 from django.views.decorators.http import require_http_methods
+import re
 
 # Our custom modules
 from .forms import ImageUploadForm
@@ -123,7 +124,7 @@ def consultancy(request):
         patient = PatientInfo.objects.get(referral_number=referral_number)
         return render(request, 'consultancy.html', {
             'referral_number': referral_number,
-            'patient': patient
+            'patient': patient,
         })
     except PatientInfo.DoesNotExist:
         # Referral number not found in our database
@@ -244,14 +245,87 @@ def location_suggestions(request):
         'referral_number': referral_number
     })
     
+def _parse_json_from_llm(text):
+    """Strip optional markdown fences and parse JSON from model output."""
+    text = text.strip()
+    if text.startswith('```'):
+        text = re.sub(r'^```(?:json)?\s*', '', text, flags=re.IGNORECASE | re.MULTILINE)
+        text = re.sub(r'\s*```\s*$', '', text)
+    return json.loads(text)
+
+
+def _diagnosis_via_groq(symptoms_text, patient_info):
+    """
+    Call Groq using AI_DOCTOR_API_KEY (same key style as gsk_... from console.groq.com).
+    Returns dict: diagnosis, medicines, severity, category.
+    """
+    from groq import Groq
+
+    api_key = (getattr(settings, 'AI_DOCTOR_API_KEY', None) or '').strip()
+    if not api_key:
+        raise ValueError('AI_DOCTOR_API_KEY is not set')
+
+    model = getattr(settings, 'GROQ_MODEL', 'llama-3.1-8b-instant')
+    client = Groq(api_key=api_key)
+
+    system = (
+        'You are a medical information assistant (not a licensed physician). '
+        'Reply with ONLY one JSON object, no markdown fences, no extra text. '
+        'Schema: {"diagnosis": string, "medicines": [{"name": string, "description": string, "dosage": string}], '
+        '"severity": string, "category": string}. '
+        'severity must be one of: mild, moderate, critical, unknown. '
+        'category: short label e.g. neurological, respiratory, gastrointestinal, general. '
+        'Suggest 2-4 OTC-style items when appropriate; note prescription drugs need a clinician. '
+        'If symptoms could be emergency (chest pain, stroke, severe breathlessness), say to seek emergency care.'
+    )
+
+    parts = []
+    if patient_info:
+        parts.append('Patient info: ' + json.dumps(patient_info))
+    parts.append('Reported symptoms: ' + (symptoms_text or '(none given)'))
+
+    completion = client.chat.completions.create(
+        model=model,
+        messages=[
+            {'role': 'system', 'content': system},
+            {'role': 'user', 'content': '\n'.join(parts)},
+        ],
+        temperature=0.2,
+    )
+    raw = (completion.choices[0].message.content or '').strip()
+    parsed = _parse_json_from_llm(raw)
+
+    diagnosis = (parsed.get('diagnosis') or '').strip()
+    medicines = parsed.get('medicines') or []
+    if not isinstance(medicines, list):
+        medicines = []
+    normalized = []
+    for m in medicines:
+        if not isinstance(m, dict):
+            continue
+        normalized.append({
+            'name': str(m.get('name', '') or 'Medication'),
+            'description': str(m.get('description', '') or ''),
+            'dosage': str(m.get('dosage', '') or ''),
+        })
+    if not diagnosis:
+        diagnosis = 'Unable to summarize; please consult a healthcare professional.'
+
+    return {
+        'diagnosis': diagnosis,
+        'medicines': normalized,
+        'severity': str(parsed.get('severity') or 'unknown'),
+        'category': str(parsed.get('category') or 'general'),
+    }
+
+
 'Handle medical image upload and analysis - sends the image and question to the AI module and shows results'
 @csrf_exempt
 @require_http_methods(["POST"])
 def check_patient_problem(request):
     """
-    API endpoint to check patient's problem/diagnosis
-    Works the same way as current consultation system
-    
+    API endpoint to check patient's problem/diagnosis via Groq (AI_DOCTOR_API_KEY).
+
     Expected JSON payload:
     {
         "api_key": "your_api_key",
@@ -267,152 +341,54 @@ def check_patient_problem(request):
         # Get API key from request
         data = json.loads(request.body)
         provided_api_key = data.get('api_key', '')
-        
+
         # Check if API key is valid (you can set this in settings.py)
-        valid_api_key = getattr(settings, 'AI_DOCTOR_API_KEY', 'DEFAULT_API_KEY_12345')
-        
-        if provided_api_key != valid_api_key:
+        valid_api_key = (getattr(settings, 'AI_DOCTOR_API_KEY', None) or '').strip()
+        if not valid_api_key:
+            return JsonResponse({
+                'success': False,
+                'error': 'Server API key is not configured (set AI_DOCTOR_API_KEY)',
+                'status_code': 503
+            }, status=503)
+
+        if (provided_api_key or '').strip() != valid_api_key:
             return JsonResponse({
                 'success': False,
                 'error': 'Invalid API key',
                 'status_code': 401
             }, status=401)
-        
-        # Extract patient information
-        symptoms = data.get('symptoms', '').lower()
+
+        symptoms_raw = data.get('symptoms', '')
         patient_info = data.get('patient_info', {})
-        
-        # Different diagnosis based on specific symptoms
-        diagnosis = ""
-        suggested_medicines = []
-        
-        if 'headache' in symptoms or 'migraine' in symptoms:
-            if 'sensitivity to light' in symptoms:
-                diagnosis = "Your symptoms suggest migraine with photophobia. I recommend rest in a dark room and consult a neurologist."
-                suggested_medicines = [
-                    {"name": "Sumatriptan 100mg", "description": "Migraine relief medication", "dosage": "Take at onset of migraine"},
-                    {"name": "Paracetamol 500mg", "description": "Pain reliever for mild symptoms", "dosage": "As needed for pain"}
-                ]
-            else:
-                diagnosis = "Your symptoms suggest tension headache. Stress management and regular sleep may help."
-                suggested_medicines = [
-                    {"name": "Ibuprofen 400mg", "description": "Anti-inflammatory for headache", "dosage": "Take with food"},
-                    {"name": "Caffeine tablets", "description": "Headache relief", "dosage": "As needed"}
-                ]
-        
-        elif 'chest pain' in symptoms or 'difficulty breathing' in symptoms:
-            diagnosis = "Chest pain with breathing difficulty requires immediate medical attention. Please visit emergency room."
-            suggested_medicines = [
-                {"name": "Aspirin 325mg", "description": "Blood thinner for heart health", "dosage": "As prescribed by cardiologist"},
-                {"name": "Nitroglycerin", "description": "Emergency chest pain relief", "dosage": "Only under medical supervision"}
-            ]
-        
-        elif 'fever' in symptoms and ('cough' in symptoms or 'body aches' in symptoms):
-            diagnosis = "Your symptoms suggest viral infection or flu. Rest, hydration, and monitoring temperature are important."
-            suggested_medicines = [
-                {"name": "Paracetamol 650mg", "description": "Fever reducer and pain relief", "dosage": "Every 6 hours as needed"},
-                {"name": "Dextromethorphan", "description": "Cough suppressant", "dosage": "As directed on packaging"},
-                {"name": "Vitamin C 1000mg", "description": "Immune system support", "dosage": "Daily during illness"}
-            ]
-        
-        elif 'stomach pain' in symptoms or 'nausea' in symptoms:
-            if 'after eating' in symptoms:
-                diagnosis = "Your symptoms suggest indigestion or gastritis. Avoid spicy foods and eat smaller meals."
-                suggested_medicines = [
-                    {"name": "Antacid tablets", "description": "Stomach acid neutralizer", "dosage": "After meals as needed"},
-                    {"name": "Omeprazole 20mg", "description": "Stomach acid reducer", "dosage": "Once daily before breakfast"},
-                    {"name": "Pepto-Bismol", "description": "Stomach upset relief", "dosage": "As directed"}
-                ]
-            else:
-                diagnosis = "Stomach pain and nausea may indicate gastroenteritis. Stay hydrated and consider BRAT diet."
-                suggested_medicines = [
-                    {"name": "Oral rehydration salts", "description": "Fluid and electrolyte replacement", "dosage": "Mix with water as directed"},
-                    {"name": "Loperamide", "description": "Anti-diarrheal medication", "dosage": "As needed"}
-                ]
-        
-        elif 'sore throat' in symptoms:
-            diagnosis = "Sore throat may be viral or bacterial. Gargle with warm salt water and avoid irritants."
-            suggested_medicines = [
-                {"name": "Lozenges", "description": "Throat soothing", "dosage": "As needed"},
-                {"name": "Strepsils", "description": "Medicated throat relief", "dosage": "Every 2-3 hours"},
-                {"name": "Amoxicillin", "description": "Antibiotic for bacterial infections", "dosage": "As prescribed by doctor"}
-            ]
-        
-        elif 'back pain' in symptoms:
-            diagnosis = "Back pain often improves with gentle exercise and proper posture. Consider physical therapy."
-            suggested_medicines = [
-                {"name": "Muscle relaxants", "description": "Relieve muscle tension", "dosage": "As prescribed"},
-                {"name": "Topical pain relief gel", "description": "Localized pain relief", "dosage": "Apply to affected area"},
-                {"name": "NSAID pain relievers", "description": "Anti-inflammatory pain relief", "dosage": "With food as needed"}
-            ]
-        
-        elif 'eye strain' in symptoms or 'blurred vision' in symptoms or 'vision' in symptoms:
-            diagnosis = "Eye strain from digital screens is common. Follow the 20-20-20 rule and consider computer glasses."
-            suggested_medicines = [
-                {"name": "Lubricating eye drops", "description": "Relieve dry eyes", "dosage": "As needed"},
-                {"name": "Vitamin A supplement", "description": "Eye health support", "dosage": "Daily"},
-                {"name": "Blue light blocking glasses", "description": "Reduce eye strain", "dosage": "Wear during screen time"}
-            ]
-        
-        elif 'anxiety' in symptoms or 'racing heart' in symptoms or 'panic' in symptoms:
-            diagnosis = "Anxiety symptoms may benefit from relaxation techniques and stress management. Consider counseling."
-            suggested_medicines = [
-                {"name": "Lavender essential oil", "description": "Natural calming aid", "dosage": "Use as aromatherapy"},
-                {"name": "Magnesium supplement", "description": "Muscle relaxation and calm", "dosage": "Daily as directed"},
-                {"name": "Chamomile tea", "description": "Natural relaxation", "dosage": "Before bedtime"}
-            ]
-        
-        elif 'skin rash' in symptoms or 'itching' in symptoms or 'allergy' in symptoms:
-            diagnosis = "Skin rashes may indicate allergic reaction or skin condition. Avoid scratching and keep area clean."
-            suggested_medicines = [
-                {"name": "Hydrocortisone cream", "description": "Anti-inflammatory skin cream", "dosage": "Apply to affected area"},
-                {"name": "Antihistamine tablets", "description": "Allergy relief", "dosage": "As directed"},
-                {"name": "Calamine lotion", "description": "Soothes itching and irritation", "dosage": "Apply to rash"}
-            ]
-        
-        elif 'insomnia' in symptoms or 'sleep' in symptoms or 'cannot sleep' in symptoms:
-            diagnosis = "Sleep issues often improve with good sleep hygiene and stress management. Avoid screens before bed."
-            suggested_medicines = [
-                {"name": "Melatonin 5mg", "description": "Sleep cycle regulation", "dosage": "30 minutes before bedtime"},
-                {"name": "Valerian root", "description": "Natural sleep aid", "dosage": "Before sleep"},
-                {"name": "Lavender pillow spray", "description": "Relaxing aroma", "dosage": "Spray on pillow before bed"}
-            ]
-        
-        elif 'dizziness' in symptoms or 'vertigo' in symptoms:
-            diagnosis = "Dizziness may indicate inner ear issues or dehydration. Sit down immediately and stay hydrated."
-            suggested_medicines = [
-                {"name": "Meclizine", "description": "Motion sickness relief", "dosage": "As needed for dizziness"},
-                {"name": "Electrolyte drinks", "description": "Hydration support", "dosage": "Throughout the day"},
-                {"name": "Ginger supplements", "description": "Natural nausea relief", "dosage": "As needed"}
-            ]
-        
-        elif 'joint pain' in symptoms or 'arthritis' in symptoms:
-            diagnosis = "Joint pain may indicate inflammation. Gentle exercise and weight management can help."
-            suggested_medicines = [
-                {"name": "Glucosamine supplements", "description": "Joint health support", "dosage": "Daily"},
-                {"name": "Omega-3 fish oil", "description": "Anti-inflammatory", "dosage": "Daily with meals"},
-                {"name": "Topical joint cream", "description": "Localized pain relief", "dosage": "Apply to joints"}
-            ]
-        
-        else:
-            # Default response for unclear symptoms
-            diagnosis = "Your symptoms require professional medical evaluation for accurate diagnosis."
-            suggested_medicines = [
-                {"name": "General pain reliever", "description": "Over-the-counter pain relief", "dosage": "As needed"},
-                {"name": "Multivitamins", "description": "General health support", "dosage": "Daily"}
-            ]
-        
-        # Return response in same format as current system
+
+        try:
+            llm = _diagnosis_via_groq(symptoms_raw, patient_info)
+        except ValueError as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e),
+                'status_code': 503
+            }, status=503)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'AI service error: {str(e)}',
+                'status_code': 502
+            }, status=502)
+
         return JsonResponse({
             'success': True,
-            'diagnosis': diagnosis,
-            'medicines': suggested_medicines,
-            'symptoms_analyzed': symptoms,
+            'diagnosis': llm['diagnosis'],
+            'medicines': llm['medicines'],
+            'severity': llm['severity'],
+            'category': llm['category'],
+            'symptoms_analyzed': symptoms_raw,
             'patient': patient_info,
             'timestamp': datetime.now().isoformat(),
-            'consultation_id': f"API_{random.randint(1000, 9999)}"
+            'consultation_id': f"API_{random.randint(1000, 9999)}",
+            'source': 'groq',
         })
-        
+
     except json.JSONDecodeError:
         return JsonResponse({
             'success': False,
@@ -425,6 +401,72 @@ def check_patient_problem(request):
             'error': f'Server error: {str(e)}',
             'status_code': 500
         }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def consultancy_diagnose(request):
+    """
+    Browser-safe diagnosis: validates session referral, calls Groq server-side.
+    No API keys are sent to or stored in the client. For GitHub/public deploys,
+    keep AI_DOCTOR_API_KEY only in environment / .env (never commit .env).
+    """
+    referral_number = request.session.get('referral_number')
+    if not referral_number:
+        return JsonResponse({
+            'success': False,
+            'error': 'Please register to obtain a referral number before consulting.',
+        }, status=403)
+
+    try:
+        patient = PatientInfo.objects.get(referral_number=referral_number)
+    except PatientInfo.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid session. Please register again.',
+        }, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data',
+        }, status=400)
+
+    symptoms_raw = data.get('symptoms', '')
+    patient_info = {
+        'name': patient.name,
+        'age': patient.age,
+        'gender': patient.get_gender_display() if patient.gender else '',
+        'referral_number': referral_number,
+    }
+
+    try:
+        llm = _diagnosis_via_groq(symptoms_raw, patient_info)
+    except ValueError as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+        }, status=503)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'AI service error: {str(e)}',
+        }, status=502)
+
+    return JsonResponse({
+        'success': True,
+        'diagnosis': llm['diagnosis'],
+        'medicines': llm['medicines'],
+        'severity': llm['severity'],
+        'category': llm['category'],
+        'symptoms_analyzed': symptoms_raw,
+        'patient': patient_info,
+        'timestamp': datetime.now().isoformat(),
+        'consultation_id': f"API_{random.randint(1000, 9999)}",
+        'source': 'groq',
+    })
 
 
 @csrf_exempt

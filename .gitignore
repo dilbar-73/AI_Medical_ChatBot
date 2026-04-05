@@ -2,5 +2,15 @@ venv/
 __pycache__/
 *.pyc
 db.sqlite3
+*.sqlite3-journal
 .env
+.env.*
+!.env.example
 cookies.txt
+media/
+*.log
+local_settings.py
+Thumbs.db
+.idea/
+*.pem
+secrets.json

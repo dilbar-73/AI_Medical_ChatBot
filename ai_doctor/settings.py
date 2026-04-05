@@ -6,8 +6,13 @@ Generated using 'django-admin startproject'
 from pathlib import Path
 import os
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Load env from project root and from cwd (helps when runserver is started elsewhere)
+load_dotenv(BASE_DIR / '.env')
+load_dotenv(Path.cwd() / '.env')
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 
 # Quick-start development settings - unsuitable for production
@@ -101,5 +106,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # API Configuration
-# Set your API key in environment variable or separate config file
-AI_DOCTOR_API_KEY = os.environ.get('AI_DOCTOR_API_KEY', 'DEFAULT_API_KEY_12345')
+# Client auth + Groq API: set AI_DOCTOR_API_KEY (e.g. gsk_...) via environment in production
+AI_DOCTOR_API_KEY = os.environ.get('AI_DOCTOR_API_KEY', '')
+# Groq model for /api/check-problem/ LLM responses — see https://console.groq.com/docs/models
+GROQ_MODEL = os.environ.get('GROQ_MODEL', 'llama-3.1-8b-instant')
