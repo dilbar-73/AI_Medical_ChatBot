@@ -173,12 +173,14 @@ def save_consultation(request):
 
 @user_passes_test(is_admin, login_url='/admin/', redirect_field_name=None)
 def database_view(request):
-    'Admin-only can access database view - shows patient consultations'
+    'Admin-only database view - shows all consultations or patient-specific history'
     referral_number = request.session.get('referral_number')
     if not referral_number:
-        return render(request, 'no_referral.html', {
-            'message': 'Please register first to get a referral number',
-            'action_url': 'registration'
+        # Admin can still inspect all saved consultations even without patient session
+        consultations = Consultation.objects.select_related('patient').order_by('-created_at')
+        return render(request, 'database.html', {
+            'patient': None,
+            'consultations': consultations,
         })
     
     try:
