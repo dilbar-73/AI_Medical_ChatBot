@@ -285,6 +285,7 @@
             </div>
         </div>
         
+        {% if patient %}
         <div class="patient-info">
             <h2>Patient Information</h2>
             <div class="info-grid">
@@ -322,6 +323,14 @@
                 </div>
             </div>
         </div>
+        {% else %}
+        <div class="patient-info">
+            <h2>All Patients Overview</h2>
+            <p style="color: var(--text-secondary);">
+                No patient is selected in the current session. Showing all saved consultations from the database.
+            </p>
+        </div>
+        {% endif %}
         
         <div class="consultations-section">
             <h2>Consultation History</h2>
@@ -337,6 +346,10 @@
                         </div>
                     </div>
                     <div class="consultation-content">
+                        {% if consultation.patient %}
+                        <h3>Patient</h3>
+                        <p>{{ consultation.patient.name }} ({{ consultation.patient.referral_number }})</p>
+                        {% endif %}
                         <h3>Diagnosis</h3>
                         <p>{{ consultation.diagnosis }}</p>
                         
