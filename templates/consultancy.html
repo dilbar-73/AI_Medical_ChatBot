@@ -413,6 +413,100 @@
             animation: fadeInUp 0.5s ease;
             /* Show response section */
         }
+
+        .prescription-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--accent-primary);
+        }
+
+        .prescription-rx {
+            font-size: 2.5rem;
+            line-height: 1;
+            color: var(--accent-primary);
+            font-weight: 700;
+        }
+
+        .prescription-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 6px 0;
+            letter-spacing: 0.02em;
+        }
+
+        .prescription-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .ai-disclaimer-banner {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        .ai-disclaimer-banner strong {
+            color: var(--warning);
+        }
+
+        .prescription-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px 24px;
+            margin-bottom: 22px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .pm-label {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .pm-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .prescription-section-title {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin: 0 0 10px 0;
+        }
+
+        .prescription-diagnosis-text {
+            color: var(--text-primary);
+            line-height: 1.65;
+            font-size: 0.98rem;
+            margin: 0;
+        }
+
+        .prescription-meta-line {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--accent-secondary);
+        }
         
         .medicine-list {
             display: grid;
@@ -424,11 +518,13 @@
         .medicine-item {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
+            border-left: 4px solid var(--accent-primary);
             border-radius: 12px;
-            padding: 20px;
+            padding: 18px 20px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
+            gap: 16px;
             /* Individual medicine card */
         }
         
@@ -629,32 +725,43 @@
         </div>
         
         <div class="response-section" id="responseSection">
-            <div class="section-title">
-                <span>📋</span>
-                <span>Diagnosis & Treatment</span>
+            <div class="prescription-header">
+                <div class="prescription-rx" aria-hidden="true">℞</div>
+                <div>
+                    <h2 class="prescription-title">Consultation summary</h2>
+                    <p class="prescription-subtitle">Educational demonstration — not a legal prescription</p>
+                </div>
             </div>
-            
-            <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <h4 style="color: var(--accent-primary); margin-bottom: 10px;">Diagnosis</h4>
-                <p id="diagnosisText">Based on your symptoms, the analysis suggests...</p>
+
+            <div class="ai-disclaimer-banner" role="note">
+                <strong>AI-generated</strong> — For educational purposes only. Not medical advice, diagnosis, or treatment. Always consult a qualified healthcare professional.
+            </div>
+
+            <div class="prescription-meta-grid">
+                <div>
+                    <span class="pm-label">Patient</span>
+                    <span class="pm-value">{{ patient.name }}</span>
+                </div>
+                <div>
+                    <span class="pm-label">Referral</span>
+                    <span class="pm-value">{{ referral_number }}</span>
+                </div>
+                <div>
+                    <span class="pm-label">Date</span>
+                    <span class="pm-value" id="prescriptionDateDisplay">—</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 22px;">
+                <h3 class="prescription-section-title">Clinical notes (AI-assisted)</h3>
+                <p id="diagnosisText" class="prescription-diagnosis-text">Describe your symptoms in the chat to generate notes.</p>
+                <p id="severityCategoryLine" class="prescription-meta-line" style="display: none;"></p>
             </div>
             
             <div class="medicine-list" id="medicineList">
-                <div class="medicine-item">
-                    <div class="medicine-info">
-                        <h4>Paracetamol 500mg</h4>
-                        <p>Pain reliever and fever reducer</p>
-                    </div>
-                    <button class="btn btn-primary" onclick="generatePDF('Paracetamol 500mg')">📄 PDF</button>
-                </div>
-                
-                <div class="medicine-item">
-                    <div class="medicine-info">
-                        <h4>Ibuprofen 400mg</h4>
-                        <p>Anti-inflammatory and pain relief</p>
-                    </div>
-                    <button class="btn btn-primary" onclick="generatePDF('Ibuprofen 400mg')">📄 PDF</button>
-                </div>
+                <p style="color: var(--text-secondary); font-size: 14px;" id="medicineListPlaceholder">
+                    Suggested medications will appear here after you describe your symptoms in the chat.
+                </p>
             </div>
             
             <div style="display: flex; gap: 10px;">
@@ -679,12 +786,19 @@
     </div>
     
     <script>
+        const PATIENT_NAME = "{{ patient.name|escapejs }}";
+        const REFERRAL_NUMBER = "{{ referral_number|escapejs }}";
+        var AI_DOC_DISCLAIMER = 'This document was generated by artificial intelligence for educational and demonstration purposes only. It does not constitute medical advice, diagnosis, or treatment, and is not a substitute for a licensed physician or pharmacist.';
+
         let selectedMethod = null;
         let isRecording = false;
         let mediaRecorder = null;
         let audioChunks = [];
         let map = null;
         let userLocation = null;
+        let lastDiagnosis = '';
+        let lastMedicines = [];
+        let lastSymptoms = '';
         
         // Initialize map
         function initMap() {
@@ -765,35 +879,103 @@
             }
         }
         
-        function sendMessage() {
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function renderMedicineList(medicines) {
+            const listEl = document.getElementById('medicineList');
+            const placeholder = document.getElementById('medicineListPlaceholder');
+            if (placeholder) placeholder.remove();
+            if (!medicines || !medicines.length) {
+                listEl.innerHTML = '<p style="color: var(--text-secondary); font-size: 14px;">No specific medications suggested.</p>';
+                return;
+            }
+            listEl.innerHTML = medicines.map(function(m) {
+                const name = m.name || '';
+                const desc = m.description || '';
+                const dose = m.dosage || '';
+                const line = desc + (dose ? ' — ' + dose : '');
+                return '<div class="medicine-item">' +
+                    '<div class="medicine-info">' +
+                    '<h4>' + escapeHtml(name) + '</h4>' +
+                    '<p>' + escapeHtml(line) + '</p>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-primary" onclick="generatePDF(' + JSON.stringify(name) + ')">📄 PDF</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        async function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
-            
-            if (message) {
-                addMessage(message, 'user');
-                input.value = '';
-                
-                // Simulate AI response
-                setTimeout(() => {
-                    const responses = [
-                        "Based on your symptoms, I recommend consulting a healthcare professional for proper diagnosis.",
-                        "Your symptoms suggest a common condition. Rest and hydration may help, but medical advice is recommended.",
-                        "I've analyzed your symptoms. Please consider visiting a doctor for accurate diagnosis and treatment."
-                    ];
-                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                    addMessage(randomResponse, 'bot');
-                    showResponseSection();
-                }, 1000);
+            if (!message) return;
+
+            addMessage(message, 'user');
+            input.value = '';
+
+            const botRow = addMessage('Analyzing your symptoms…', 'bot');
+            const botBubble = botRow.querySelector('.message-bubble');
+
+            try {
+                const response = await fetch('/api/consult-diagnose/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symptoms: message })
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    botBubble.textContent = (data.error || 'Could not analyze symptoms.') + ' Please try again.';
+                    return;
+                }
+
+                lastDiagnosis = data.diagnosis || '';
+                lastSymptoms = message;
+                lastMedicines = (data.medicines || []).map(function(m) { return m.name; });
+
+                var extra = '';
+                if (data.severity) extra += ' (Severity: ' + data.severity + ')';
+                if (data.category) extra += ' [' + data.category + ']';
+                botBubble.textContent = (data.diagnosis || '') + extra;
+
+                document.getElementById('diagnosisText').textContent = data.diagnosis || '';
+                var sevEl = document.getElementById('severityCategoryLine');
+                if (data.severity || data.category) {
+                    sevEl.style.display = 'block';
+                    var parts = [];
+                    if (data.severity) parts.push('Severity: ' + data.severity);
+                    if (data.category) parts.push('Category: ' + data.category);
+                    sevEl.textContent = parts.join(' · ');
+                } else {
+                    sevEl.style.display = 'none';
+                    sevEl.textContent = '';
+                }
+                document.getElementById('prescriptionDateDisplay').textContent = new Date().toLocaleString();
+
+                renderMedicineList(data.medicines || []);
+                showResponseSection();
+            } catch (err) {
+                console.error(err);
+                botBubble.textContent = 'Network error. Please check your connection and try again.';
             }
         }
-        
+
         function addMessage(text, sender) {
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}`;
-            messageDiv.innerHTML = `<div class="message-bubble">${text}</div>`;
+            messageDiv.className = 'message ' + sender;
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            messageDiv.appendChild(bubble);
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
+            return messageDiv;
         }
         
         function handleKeyPress(event) {
@@ -899,48 +1081,111 @@
             document.getElementById('responseSection').classList.add('show');
         }
         
+        function pdfAppendEducationalFooter(doc, startY) {
+            doc.setFontSize(8);
+            doc.setTextColor(85, 85, 85);
+            var lines = doc.splitTextToSize(AI_DOC_DISCLAIMER, 170);
+            doc.text(lines, 20, startY);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            return startY + lines.length * 4.2 + 12;
+        }
+
         function generatePDF(medicineName) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            // Add content to PDF
-            doc.setFontSize(20);
-            doc.text('Medical Prescription', 20, 20);
-            
-            doc.setFontSize(12);
-            doc.text(`Medicine: ${medicineName}`, 20, 40);
-            doc.text(`Patient: {{ user.username }}`, 20, 50);
-            doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 60);
-            doc.text('Dosage: As prescribed by physician', 20, 70);
-            doc.text('Precautions: Take with food, avoid alcohol', 20, 80);
-            doc.text('Side Effects: May cause drowsiness', 20, 90);
-            
-            // Save the PDF
-            doc.save(`${medicineName.replace(/\s+/g, '_')}_prescription.pdf`);
+            var y = 16;
+            doc.setFontSize(15);
+            doc.setFont(undefined, 'bold');
+            doc.text('AI Doctor — Consultation record', 20, y);
+            doc.setFont(undefined, 'normal');
+            y += 9;
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Educational / demonstration only — not a legal prescription', 20, y);
+            doc.setTextColor(0, 0, 0);
+            y += 12;
+            doc.setFontSize(11);
+            doc.text('Patient: ' + PATIENT_NAME, 20, y);
+            y += 7;
+            doc.text('Referral: ' + REFERRAL_NUMBER, 20, y);
+            y += 7;
+            doc.text('Date: ' + new Date().toLocaleString(), 20, y);
+            y += 11;
+            doc.setFont(undefined, 'bold');
+            doc.text('Item discussed', 20, y);
+            doc.setFont(undefined, 'normal');
+            y += 7;
+            var itemLines = doc.splitTextToSize(String(medicineName), 170);
+            doc.text(itemLines, 20, y);
+            y += itemLines.length * 5.5 + 6;
+            if (lastDiagnosis) {
+                doc.setFont(undefined, 'bold');
+                doc.text('Related AI summary', 20, y);
+                doc.setFont(undefined, 'normal');
+                y += 7;
+                var dLines = doc.splitTextToSize(lastDiagnosis, 170);
+                doc.text(dLines, 20, y);
+                y += dLines.length * 5 + 8;
+            }
+            y = pdfAppendEducationalFooter(doc, y);
+            doc.save(medicineName.replace(/\s+/g, '_') + '_consultation_record.pdf');
         }
         
         function generateFullReport() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            doc.setFontSize(20);
-            doc.text('Medical Consultation Report', 20, 20);
-            
-            doc.setFontSize(12);
-            doc.text(`Patient: {{ user.username }}`, 20, 40);
-            doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 50);
-            doc.text('Diagnosis: Based on symptoms analysis', 20, 60);
-            doc.text('Recommended Medications:', 20, 70);
-            doc.text('- Paracetamol 500mg', 30, 80);
-            doc.text('- Ibuprofen 400mg', 30, 90);
-            doc.text('Follow-up: Consult physician if symptoms persist', 20, 100);
-            
-            doc.save('medical_report.pdf');
+            var y = 16;
+            doc.setFontSize(15);
+            doc.setFont(undefined, 'bold');
+            doc.text('AI Doctor — Full consultation report', 20, y);
+            doc.setFont(undefined, 'normal');
+            y += 9;
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text('AI-generated · Educational purpose only', 20, y);
+            doc.setTextColor(0, 0, 0);
+            y += 12;
+            doc.setFontSize(11);
+            doc.text('Patient: ' + PATIENT_NAME, 20, y);
+            y += 7;
+            doc.text('Referral: ' + REFERRAL_NUMBER, 20, y);
+            y += 7;
+            doc.text('Date: ' + new Date().toLocaleString(), 20, y);
+            y += 11;
+            doc.setFont(undefined, 'bold');
+            doc.text('Clinical notes (AI-assisted)', 20, y);
+            doc.setFont(undefined, 'normal');
+            y += 7;
+            var diag = lastDiagnosis || '—';
+            var diagLines = doc.splitTextToSize(diag, 170);
+            doc.text(diagLines, 20, y);
+            y += diagLines.length * 5 + 8;
+            doc.setFont(undefined, 'bold');
+            doc.text('Medications discussed (informational)', 20, y);
+            doc.setFont(undefined, 'normal');
+            y += 7;
+            if (lastMedicines.length) {
+                lastMedicines.forEach(function(m) {
+                    doc.text('\u2022 ' + m, 24, y);
+                    y += 7;
+                });
+            } else {
+                doc.text('—', 24, y);
+                y += 7;
+            }
+            y += 5;
+            doc.setFontSize(10);
+            doc.text('Follow-up: seek in-person care if symptoms worsen or persist.', 20, y);
+            y += 12;
+            pdfAppendEducationalFooter(doc, y);
+            doc.save('consultation_report_educational.pdf');
         }
         
         async function saveToDatabase() {
-            const diagnosis = document.getElementById('diagnosisText').innerText;
-            
+            const diagnosis = lastDiagnosis || document.getElementById('diagnosisText').innerText;
+            const medicines = lastMedicines.length ? lastMedicines : [];
+
             try {
                 const response = await fetch('/save-consultation/', {
                     method: 'POST',
@@ -950,8 +1195,9 @@
                     },
                     body: JSON.stringify({
                         diagnosis: diagnosis,
-                        medicines: ['Paracetamol 500mg', 'Ibuprofen 400mg'],
-                        user_id: '{{ user.id }}'
+                        medicines: medicines,
+                        symptoms: lastSymptoms,
+                        user_id: '{{ patient.id }}'
                     })
                 });
                 
@@ -984,7 +1230,9 @@
         // Initialize map when page loads
         document.addEventListener('DOMContentLoaded', function() {
             initMap();
-            selectMethod('both'); // Default to both methods
+            selectMethod('both');
+            var pd = document.getElementById('prescriptionDateDisplay');
+            if (pd) pd.textContent = new Date().toLocaleString();
         });
     </script>
 </body>
